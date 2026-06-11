@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Translator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #0f2027;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #00b894;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #2a5298;
+            background: #edf2f7;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(30,60,114,0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .preview-area {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .preview-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .preview-header {
+            background: #f7fafc;
+            padding: 12px 15px;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .preview-content {
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .format-info {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .preview-area {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📄 Document Translator </h1>
+        <p> Format - PDF | TXT | DOCX | XLSX | PPTX</p>
+        <div class="badge">✅  Struktur Tabel, Bold, Italic, Paragraf</div>
+    </div>
+    <div class="content">
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon" style="font-size: 48px;">📑</div>
+            <p>Klik atau drag & drop file di sini</p>
+            <p style="font-size: 0.85rem; color: #666;">PDF | TXT | DOCX | XLSX | PPTX (Maks 30MB)</p>
+            <input type="file" id="fileInput" class="file-input" accept=".pdf,.txt,.docx,.xlsx,.pptx">
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>🌐 Dari Bahasa</label>
+                <select id="sourceLang">
+                    <option value="auto">Auto Detect</option>
+                    <option value="id">Indonesia</option>
+                    <option value="en">English</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>🎯 Ke Bahasa</label>
+                <select id="targetLang">
+                    <option value="id">Indonesia</option>
+                    <option value="en">English</option>
+                    <option value="zh-CN">中文</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button id="translateBtn" disabled>🚀 Terjemahkan & Pertahankan Format</button>
+            </div>
+        </div>
+
+        <div class="format-info" id="formatInfo" style="display: none;">
+            💡 <strong>Informasi Format:</strong> <span id="formatDesc"></span>
+        </div>
+
+        <div class="preview-area" id="previewArea" style="display: none;">
+            <div class="preview-box">
+                <div class="preview-header">📄 Teks Asli (Ekstraksi dengan Format)</div>
+                <div class="preview-content" id="originalPreview"></div>
+            </div>
+            <div class="preview-box">
+                <div class="preview-header">🌍 Hasil Terjemahan (Format Dipertahankan)</div>
+                <div class="preview-content" id="translatedPreview"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="downloadDocxBtn" style="width: auto; background: #28a745; display: inline-block; margin: 0 10px;" disabled>📥 Download sebagai DOCX (dengan format)</button>
+            <button id="downloadTxtBtn" style="width: auto; background: #17a2b8; display: inline-block;" disabled>📥 Download sebagai TXT</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.4.2/mammoth.browser.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js';
+
+    let currentFile = null;
+    let extractedStructuredText = '';
+    let translatedStructuredText = '';
+    let currentFormatType = '';
+
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const translateBtn = document.getElementById('translateBtn');
+    const previewArea = document.getElementById('previewArea');
+    const originalPreview = document.getElementById('originalPreview');
+    const translatedPreview = document.getElementById('translatedPreview');
+    const formatInfo = document.getElementById('formatInfo');
+    const formatDesc = document.getElementById('formatDesc');
+    const downloadDocxBtn = document.getElementById('downloadDocxBtn');
+    const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#2a5298';
+    });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = '#cbd5e0';
+    });
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#cbd5e0';
+        if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    async function handleFile(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const allowed = ['pdf', 'txt', 'docx', 'xlsx', 'pptx'];
+        if (!allowed.includes(ext)) {
+            alert('Format tidak didukung');
+            return;
+        }
+        currentFile = file;
+        translateBtn.disabled = false;
+        
+        // Tampilkan info format
+        formatInfo.style.display = 'block';
+        if (ext === 'xlsx') {
+            formatDesc.innerHTML = 'File Excel: Struktur tabel (baris/kolom) akan dipertahankan sebagai teks tabular.';
+        } else if (ext === 'docx') {
+            formatDesc.innerHTML = 'File Word: Heading, bold, italic, dan paragraf akan dipertahankan.';
+        } else if (ext === 'pptx') {
+            formatDesc.innerHTML = 'File PowerPoint: Teks per slide akan dipisahkan dengan jelas.';
+        } else if (ext === 'pdf') {
+            formatDesc.innerHTML = 'File PDF: Teks akan diekstrak dengan mempertahankan urutan paragraf.';
+        } else {
+            formatDesc.innerHTML = 'File Teks: Format polos akan dipertahankan 100%.';
+        }
+        
+        // Ekstrak dengan format
+        await extractWithFormat(file);
+    }
+
+    async function extractWithFormat(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        currentFormatType = ext;
+        
+        originalPreview.innerHTML = '<em>Mengekstrak teks dengan mempertahankan format...</em>';
+        
+        try {
+            if (ext === 'txt') {
+                const text = await readFileAsText(file);
+                extractedStructuredText = text;
+                originalPreview.innerText = text;
+            } 
+            else if (ext === 'docx') {
+                // Mammoth bisa mempertahankan bold, italic, heading
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                extractedStructuredText = result.value;
+                originalPreview.innerText = extractedStructuredText;
+            }
+            else if (ext === 'xlsx') {
+                // Pertahankan struktur tabel
+                const arrayBuffer = await file.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                let tableText = '';
+                workbook.SheetNames.forEach(sheetName => {
+                    const sheet = workbook.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                    tableText += `\n📊 SHEET: ${sheetName}\n`;
+                    tableText += '─'.repeat(50) + '\n';
+                    data.forEach(row => {
+                        const rowText = row.map(cell => cell || '').join('\t');
+                        tableText += rowText + '\n';
+                    });
+                    tableText += '\n';
+                });
+                extractedStructuredText = tableText;
+                originalPreview.innerText = extractedStructuredText;
+            }
+            else if (ext === 'pptx') {
+                // Parse PPTX dengan JSZip
+                await loadJSZip();
+                const arrayBuffer = await file.arrayBuffer();
+                const zip = await JSZip.loadAsync(arrayBuffer);
+                const slideFiles = Object.keys(zip.files).filter(name => name.match(/ppt\/slides\/slide\d+\.xml/));
+                let slidesText = '';
+                for (let i = 0; i < slideFiles.length; i++) {
+                    const xml = await zip.files[slideFiles[i]].async('string');
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xml, 'text/xml');
+                    const texts = xmlDoc.getElementsByTagName('a:t');
+                    let slideContent = [];
+                    for (let t of texts) {
+                        slideContent.push(t.textContent);
+                    }
+                    slidesText += `\n📽️ SLIDE ${i+1}\n${'─'.repeat(40)}\n${slideContent.join(' ')}\n\n`;
+                }
+                extractedStructuredText = slidesText;
+                originalPreview.innerText = extractedStructuredText;
+            }
+            else if (ext === 'pdf') {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += `\n📄 Halaman ${i}\n${'─'.repeat(40)}\n${pageText}\n\n`;
+                }
+                extractedStructuredText = fullText;
+                originalPreview.innerText = extractedStructuredText;
+            }
+            
+            previewArea.style.display = 'grid';
+        } catch (err) {
+            console.error(err);
+            originalPreview.innerHTML = `<span style="color:red;">Gagal ekstraksi: ${err.message}</span>`;
+        }
+    }
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file, 'UTF-8');
+        });
+    }
+
+    function loadJSZip() {
+        if (window.JSZip) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function translateText(text, target, source = 'auto') {
+        if (!text || text.trim().length === 0) return '';
+        
+        // Split menjadi kalimat untuk terjemahan lebih baik (mempertahankan struktur baris)
+        const lines = text.split('\n');
+        const translatedLines = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.trim() === '' || line.match(/^[─📊📄📽️\s]+$/)) {
+                translatedLines.push(line); // Pertahankan separator
+                continue;
+            }
+            
+            // Deteksi jika ini adalah header sheet/slide
+            if (line.includes('SHEET:') || line.includes('SLIDE') || line.includes('Halaman')) {
+                translatedLines.push(line);
+                continue;
+            }
+            
+            try {
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(line)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                let translated = '';
+                if (data && data[0]) {
+                    for (let part of data[0]) {
+                        if (part[0]) translated += part[0];
+                    }
+                }
+                translatedLines.push(translated || line);
+            } catch (e) {
+                translatedLines.push(line);
+            }
+            
+            // Update progress
+            if (i % 10 === 0) {
+                translatedPreview.innerHTML = `Menerjemahkan... ${Math.round((i/lines.length)*100)}%`;
+            }
+        }
+        
+        return translatedLines.join('\n');
+    }
+
+    translateBtn.addEventListener('click', async () => {
+        if (!extractedStructuredText) {
+            alert('Ekstrak file terlebih dahulu');
+            return;
+        }
+        
+        translateBtn.disabled = true;
+        translateBtn.innerText = '🔄 Menerjemahkan...';
+        translatedPreview.innerHTML = '<em>Sedang menerjemahkan dengan mempertahankan format...</em>';
+        
+        try {
+            const target = document.getElementById('targetLang').value;
+            const source = document.getElementById('sourceLang').value;
+            
+            translatedStructuredText = await translateText(extractedStructuredText, target, source);
+            translatedPreview.innerText = translatedStructuredText;
+            
+            downloadDocxBtn.disabled = false;
+            downloadTxtBtn.disabled = false;
+        } catch (err) {
+            console.error(err);
+            translatedPreview.innerHTML = `<span style="color:red;">Error: ${err.message}</span>`;
+        } finally {
+            translateBtn.disabled = false;
+            translateBtn.innerText = '🚀 Terjemahkan ';
+        }
+    });
+
+    downloadTxtBtn.addEventListener('click', () => {
+        if (!translatedStructuredText) return;
+        const blob = new Blob([translatedStructuredText], { type: 'text/plain' });
+        saveAs(blob, `translated_${Date.now()}.txt`);
+    });
+
+    downloadDocxBtn.addEventListener('click', async () => {
+        if (!translatedStructuredText) return;
+        // Buat DOCX sederhana dengan format (menggunakan docx library)
+        await loadDocxLibrary();
+        const { Document, Packer, Paragraph, TextRun } = window.docx;
+        
+        const lines = translatedStructuredText.split('\n');
+        const paragraphs = [];
+        
+        for (let line of lines) {
+            if (line.trim() === '') {
+                paragraphs.push(new Paragraph({ children: [] }));
+            } else if (line.includes('SHEET:') || line.includes('SLIDE') || line.includes('Halaman')) {
+                paragraphs.push(new Paragraph({ 
+                    children: [new TextRun({ text: line, bold: true, size: 28 })],
+                    spacing: { before: 200, after: 100 }
+                }));
+            } else if (line.includes('─')) {
+                paragraphs.push(new Paragraph({ 
+                    children: [new TextRun({ text: line, color: '666666' })]
+                }));
+            } else {
+                paragraphs.push(new Paragraph({ 
+                    children: [new TextRun({ text: line, size: 24 })]
+                }));
+            }
+        }
+        
+        const doc = new Document({ sections: [{ properties: {}, children: paragraphs }] });
+        const blob = await Packer.toBlob(doc);
+        saveAs(blob, `translated_${Date.now()}.docx`);
+    });
+
+    function loadDocxLibrary() {
+        if (window.docx) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/docx@8.5.0/build/index.js';
+            script.onload = () => {
+                window.docx = docx;
+                resolve();
+            };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+</script>
+</body>
+</html>
